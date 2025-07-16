@@ -8,8 +8,8 @@ export default function App() {
       <h1 className="text-4xl font-bold text-center mb-6">Fútbol Sala</h1>
       <BrowserRouter>
       <Routes>
-        <Route path="/" element={<PartidoForm />} />
-        <Route path="/minutos" element={<MinutosForm />} />
+        <Route path="/partidos" element={<PartidoForm />} />
+        <Route path="/" element={<MinutosForm />} />
       </Routes>
     </BrowserRouter>
 

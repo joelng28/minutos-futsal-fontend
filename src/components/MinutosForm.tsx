@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 
+
 interface Jugador {
   id: number;
   dorsal: number;
@@ -103,12 +104,12 @@ export default function TablaRotaciones() {
         </thead>
         <tbody>
           {jugadores.map((jug) => (
-            <tr key={jug.id}>
-              <td className="border px-4 py-2">{jug.dorsal}</td>
-              <td className="border px-4 py-2">{jug.nombre}</td>
-              <td className="border px-4 py-2">{formatearTiempo(jug.rotacionActual)}</td>
-              <td className="border px-4 py-2">{formatearTiempo(jug.tiempoTotal)}</td>
-              <td className="border px-4 py-2">
+            <tr key={jug.id} className="bg-gray-100 border-b border-white">
+              <td className="px-4 py-2">{jug.dorsal}</td>
+              <td className="px-4 py-2">{jug.nombre}</td>
+              <td className="px-4 py-2">{formatearTiempo(jug.rotacionActual)}</td>
+              <td className="px-4 py-2">{formatearTiempo(jug.tiempoTotal)}</td>
+              <td className="px-4 py-2">
                 {jug.enPista ? (
                   <button
                     className="bg-red-500 text-white px-2 py-1 rounded"
