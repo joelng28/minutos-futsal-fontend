@@ -20,10 +20,12 @@ export default function TablaRotaciones() {
   const [showModal, setShowModal] = useState(false);
   const [jugadorASustituirId, setJugadorASustituirId] = useState<number | null>(null);
   const [jugadorEntranteId, setJugadorEntranteId] = useState<number | null>(null);
+  const [tiempo, setTiempo] = useState<number>(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (contadorActivo) {
+        setTiempo (prev => prev + 1);
         setJugadores((prevJugadores) =>
           prevJugadores.map((jug) =>
             jug.enPista
@@ -90,8 +92,15 @@ export default function TablaRotaciones() {
   };
 
   return (
-    <div className="p-4">
-    <button onClick={() => setContador((prev)=>!prev)}>{contadorActivo ? "Pausar" : "Iniciar"}</button>
+    <div className="p-4 space-y-5">
+      <div className="bg-cyan-500 p-4 rounded shadow-md">
+        <div className="flex gap-2 items-center">
+          <text className="text-xl font-bold text-white"> Parte 1 </text>
+          <text className="text-xl font-bold text-white">{formatearTiempo(tiempo)}</text>
+          <button className="size-50" onClick={() => setContador((prev) => !prev)}>{contadorActivo ? "Pausar" : "Iniciar"}</button>
+          <button className=""> Finalizar parte </button>
+        </div>
+      </div>
       <table className="w-full border border-collapse">
         <thead>
           <tr className="bg-gray-200">
@@ -119,7 +128,7 @@ export default function TablaRotaciones() {
                   </button>
                 ) : (
                   <button
-                    className="bg-green-600 text-white px-2 py-1 rounded"
+                    className="bg-red-500/40 text-white px-2 py-1 rounded"
                     onClick={() => añadirAPista(jug.id)}
                     disabled
                   >
@@ -131,7 +140,7 @@ export default function TablaRotaciones() {
           ))}
         </tbody>
       </table>
-    {showModal && (
+      {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-md">
             <h2 className="text-lg font-semibold mb-4">Selecciona al jugador que entra</h2>
@@ -168,7 +177,7 @@ export default function TablaRotaciones() {
             </div>
           </div>
         </div>
-      )}  
+      )}
     </div>
   );
 }
