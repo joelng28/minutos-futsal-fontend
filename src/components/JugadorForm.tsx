@@ -8,8 +8,8 @@ interface Posicion {
 
 interface Temporada {
   id: number;
-  startYear: number;
-  endYear: number;
+  anio_inicio: number;
+  anio_fin: number;
 }
 
 export default function JugadorForm() {
@@ -70,13 +70,25 @@ export default function JugadorForm() {
 
     setLoading(true);
     try {
-      await axios.post("/api/jugadores", {
+      // 1. Crear jugador
+      const res = await axios.post("/api/jugadores", {
         nombre,
         dorsal,
         posicion_id: posicionPrincipal,
         posicion_secundaria_id: posicionSecundaria || null,
-        temporadas: temporadasSeleccionadas,
       });
+
+      const jugadorId = res.data.id;
+
+      // 2. Asociar jugador a cada temporada
+      await Promise.all(
+        temporadasSeleccionadas.map((temporadaId) =>
+          axios.post(`/api/temporadas/${temporadaId}/jugadores`, {
+            jugador_id: jugadorId,
+          })
+        )
+      );
+
       setSuccess(true);
       setNombre("");
       setDorsal("");
@@ -162,7 +174,7 @@ export default function JugadorForm() {
               checked={temporadasSeleccionadas.includes(temp.id)}
               onChange={() => toggleTemporada(temp.id)}
             />
-            <span className="ml-2">{temp.startYear} - {temp.endYear}</span>
+            <span className="ml-2">{temp.anio_inicio} - {temp.anio_fin}</span>
           </label>
         ))}
       </fieldset>

@@ -1,10 +1,17 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from 'react-router-dom';
 
 interface Temporada {
   id: number;
-  startYear: number;
-  endYear: number;
+  anio_inicio: number;
+  anio_fin: number;
+}
+
+interface Jugador {
+  id: number;
+  nombre: string;
+  posicion: string;
 }
 
 export default function PartidoForm() {
@@ -14,6 +21,16 @@ export default function PartidoForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [jugadores, setJugadores] = useState<Jugador[]>([]);
+ const [seleccionados, setSeleccionados] = useState<{ [id: number]: boolean }>({});
+  const navigate = useNavigate();
+
+   const seleccionarJugador = (id: number) => {
+    setSeleccionados((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   useEffect(() => {
     async function fetchTemporadas() {
@@ -24,8 +41,22 @@ export default function PartidoForm() {
         setError("Error cargando temporadas");
       }
     }
+
+    async function fetchJugadores() {
+      try {
+        const res = await axios.get("/api/temporadas/"+temporadaId+"/jugadores");
+        setJugadores(res.data);
+      } catch (error) {
+        setError("Error cargando jugadores");
+      }
+    }
+    
+ 
+
+    setSeleccionados({});
     fetchTemporadas();
-  }, []);
+    fetchJugadores();
+  }, [temporadaId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,11 +76,12 @@ export default function PartidoForm() {
     try {
       await axios.post("/api/partidos", {
         temporada_id: temporadaId,
-        fecha,
+        fecha: fecha,
       });
       setSuccess(true);
       setTemporadaId("");
       setFecha("");
+      navigate('/minutos');
     } catch {
       setError("Error al crear partido");
     } finally {
@@ -76,7 +108,7 @@ export default function PartidoForm() {
           <option value="">-- Seleccione temporada --</option>
           {temporadas.map((temp) => (
             <option key={temp.id} value={temp.id}>
-              {temp.startYear} - {temp.endYear}
+              {temp.anio_inicio}{temp.anio_fin}
             </option>
           ))}
         </select>
@@ -92,6 +124,33 @@ export default function PartidoForm() {
           className="w-full border px-3 py-2 rounded"
           required
         />
+      </div>
+
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th>Seleccionado</th>
+              <th>Posicion</th>
+              <th>Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jugadores.map((jug) => (
+              <tr key={jug.id}>
+              <td> <input 
+              type = "checkbox"
+              checked = {!!seleccionados[jug.id]}
+              onChange={()=>seleccionarJugador(jug.id)}
+              ></input>
+              
+              </td>
+              <td>{jug.posicion}</td>
+              <td>{jug.nombre}</td></tr>
+            ))}
+            
+          </tbody>
+        </table>
       </div>
 
       <button

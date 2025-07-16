@@ -1,140 +1,173 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
-
-interface Partido {
-  id: number;
-  fecha: string;
-}
 
 interface Jugador {
   id: number;
+  dorsal: number;
   nombre: string;
+  enPista: boolean;
+  rotacionActual: number; // en segundos
+  tiempoTotal: number; // en segundos
 }
 
-export default function MinutosForm() {
-  const [partidos, setPartidos] = useState<Partido[]>([]);
-  const [jugadores, setJugadores] = useState<Jugador[]>([]);
-  const [partidoId, setPartidoId] = useState<number | "">("");
-  const [jugadorId, setJugadorId] = useState<number | "">("");
-  const [minutos, setMinutos] = useState<number | "">("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+export default function TablaRotaciones() {
+  const [jugadores, setJugadores] = useState<Jugador[]>([
+    { id: 1, dorsal: 1, nombre: "Joel Navarro", enPista: true, rotacionActual: 0, tiempoTotal: 0 },
+    { id: 2, dorsal: 7, nombre: "Luis Pérez", enPista: true, rotacionActual: 0, tiempoTotal: 0 },
+    { id: 3, dorsal: 10, nombre: "Marcos Ruiz", enPista: false, rotacionActual: 0, tiempoTotal: 0 },
+  ]);
+  const [contadorActivo, setContador] = useState<boolean>(true);
+  const [showModal, setShowModal] = useState(false);
+  const [jugadorASustituirId, setJugadorASustituirId] = useState<number | null>(null);
+  const [jugadorEntranteId, setJugadorEntranteId] = useState<number | null>(null);
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const [pRes, jRes] = await Promise.all([
-          axios.get("/api/partidos"),
-          axios.get("/api/jugadores"),
-        ]);
-        setPartidos(pRes.data);
-        setJugadores(jRes.data);
-      } catch {
-        setError("Error cargando partidos o jugadores");
+    const interval = setInterval(() => {
+      if (contadorActivo) {
+        setJugadores((prevJugadores) =>
+          prevJugadores.map((jug) =>
+            jug.enPista
+              ? {
+                  ...jug,
+                  rotacionActual: jug.rotacionActual + 1,
+                  tiempoTotal: jug.tiempoTotal + 1,
+                }
+              : jug
+          )
+        );
       }
-    }
-    fetchData();
-  }, []);
+    }, 1000);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(false);
+    return () => clearInterval(interval);
+  }, [contadorActivo]);
 
-    if (!partidoId) {
-      setError("Seleccione un partido");
-      return;
-    }
-    if (!jugadorId) {
-      setError("Seleccione un jugador");
-      return;
-    }
-    if (minutos === "" || minutos < 0 || minutos > 60) {
-      setError("Ingrese minutos válidos (0-60)");
-      return;
-    }
+  const abrirModal = (id: number) =>{
+    setJugadorASustituirId(id);
+    setJugadorEntranteId(null);
+    setShowModal(true);
+  }
 
-    setLoading(true);
-    try {
-      await axios.post("/api/minutos", {
-        partido_id: partidoId,
-        jugador_id: jugadorId,
-        minutos,
-      });
-      setSuccess(true);
-      setPartidoId("");
-      setJugadorId("");
-      setMinutos("");
-    } catch {
-      setError("Error al guardar minutos");
-    } finally {
-      setLoading(false);
+    const confirmarSustitucion = () => {
+    if (jugadorASustituirId !== null && jugadorEntranteId !== null) {
+      setJugadores((prev) =>
+        prev.map((jug) => {
+          if (jug.id === jugadorASustituirId) {
+            return { ...jug, enPista: false, rotacionActual: 0 };
+          } else if (jug.id === jugadorEntranteId) {
+            return { ...jug, enPista: true, rotacionActual: 0 };
+          }
+          return jug;
+        })
+      );
+      setShowModal(false);
     }
   };
 
+  const quitarDePista = (id: number) => {
+    setJugadores((prev) =>
+      prev.map((jug) =>
+        jug.id === id
+          ? { ...jug, enPista: false, rotacionActual: 0 } // quitar y reiniciar rotacionActual
+          : jug
+      )
+    );
+  };
+
+  const añadirAPista = (id: number) => {
+    setJugadores((prev) =>
+      prev.map((jug) =>
+        jug.id === id
+          ? { ...jug, enPista: true, rotacionActual: 0 } // añadir y reiniciar rotacionActual
+          : jug
+      )
+    );
+  };
+
+  const formatearTiempo = (segundos: number) => {
+    const min = Math.floor(segundos / 60);
+    const sec = segundos % 60;
+    return `${min}:${sec.toString().padStart(2, "0")}`;
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 border rounded shadow mt-8">
-      <h2 className="text-xl font-semibold mb-4">Registrar Minutos Jugados</h2>
-
-      {error && <p className="text-red-600 mb-3">{error}</p>}
-      {success && <p className="text-green-600 mb-3">Minutos registrados correctamente</p>}
-
-      <div className="mb-4">
-        <label htmlFor="partido" className="block mb-1 font-medium">Partido</label>
-        <select
-          id="partido"
-          value={partidoId}
-          onChange={(e) => setPartidoId(Number(e.target.value))}
-          className="w-full border px-3 py-2 rounded"
-          required
-        >
-          <option value="">-- Seleccione partido --</option>
-          {partidos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {new Date(p.fecha).toLocaleString()}
-            </option>
+    <div className="p-4">
+    <button onClick={() => setContador((prev)=>!prev)}>{contadorActivo ? "Pausar" : "Iniciar"}</button>
+      <table className="w-full border border-collapse">
+        <thead>
+          <tr className="bg-gray-200">
+            <th className="border px-4 py-2">Dorsal</th>
+            <th className="border px-4 py-2">Nombre</th>
+            <th className="border px-4 py-2">Rotación actual</th>
+            <th className="border px-4 py-2">Total</th>
+            <th className="border px-4 py-2">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {jugadores.map((jug) => (
+            <tr key={jug.id}>
+              <td className="border px-4 py-2">{jug.dorsal}</td>
+              <td className="border px-4 py-2">{jug.nombre}</td>
+              <td className="border px-4 py-2">{formatearTiempo(jug.rotacionActual)}</td>
+              <td className="border px-4 py-2">{formatearTiempo(jug.tiempoTotal)}</td>
+              <td className="border px-4 py-2">
+                {jug.enPista ? (
+                  <button
+                    className="bg-red-500 text-white px-2 py-1 rounded"
+                    onClick={() => abrirModal(jug.id)}
+                  >
+                    Quitar
+                  </button>
+                ) : (
+                  <button
+                    className="bg-green-600 text-white px-2 py-1 rounded"
+                    onClick={() => añadirAPista(jug.id)}
+                    disabled
+                  >
+                    Quitar
+                  </button>
+                )}
+              </td>
+            </tr>
           ))}
-        </select>
-      </div>
+        </tbody>
+      </table>
+    {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-md">
+            <h2 className="text-lg font-semibold mb-4">Selecciona al jugador que entra</h2>
 
-      <div className="mb-4">
-        <label htmlFor="jugador" className="block mb-1 font-medium">Jugador</label>
-        <select
-          id="jugador"
-          value={jugadorId}
-          onChange={(e) => setJugadorId(Number(e.target.value))}
-          className="w-full border px-3 py-2 rounded"
-          required
-        >
-          <option value="">-- Seleccione jugador --</option>
-          {jugadores.map((j) => (
-            <option key={j.id} value={j.id}>{j.nombre}</option>
-          ))}
-        </select>
-      </div>
+            <select
+              className="border px-2 py-1 mb-4 w-full"
+              value={jugadorEntranteId ?? ""}
+              onChange={(e) => setJugadorEntranteId(Number(e.target.value))}
+            >
+              <option value="">-- Seleccionar jugador --</option>
+              {jugadores
+                .filter((jug) => !jug.enPista)
+                .map((jug) => (
+                  <option key={jug.id} value={jug.id}>
+                    {jug.dorsal} - {jug.nombre}
+                  </option>
+                ))}
+            </select>
 
-      <div className="mb-4">
-        <label htmlFor="minutos" className="block mb-1 font-medium">Minutos Jugados</label>
-        <input
-          id="minutos"
-          type="number"
-          value={minutos}
-          onChange={(e) => setMinutos(e.target.value === "" ? "" : Number(e.target.value))}
-          min={0}
-          max={60}
-          className="w-full border px-3 py-2 rounded"
-          required
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? "Guardando..." : "Registrar Minutos"}
-      </button>
-    </form>
+            <div className="flex justify-end gap-2">
+              <button
+                className="bg-gray-300 px-4 py-2 rounded"
+                onClick={() => setShowModal(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+                onClick={confirmarSustitucion}
+                disabled={jugadorEntranteId === null}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}  
+    </div>
   );
 }

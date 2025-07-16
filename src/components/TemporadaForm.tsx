@@ -27,7 +27,7 @@ export default function TemporadaForm() {
 
     setLoading(true);
     try {
-      await axios.post("/api/temporadas", { startYear: start, endYear: end });
+      await axios.post("/api/temporadas", { nombre: "Hola", anio_inicio: start, anio_fin: end });
       setSuccess(true);
       setStartYear("");
       setEndYear("");
