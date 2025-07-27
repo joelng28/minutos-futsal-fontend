@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import {API_URL} from '../config'
 
 interface Temporada {
   id: number;
@@ -19,9 +20,11 @@ export default function TemporadaForm() {
   useEffect(() => {
     async function fetchTemporadas() {
       try {
-        const res = await axios.get("http://localhost:3001/api/temporadas");
+        console.log(API_URL+"/temporadas")
+        const res = await axios.get(API_URL+"/temporadas");
         setTemporadas(res.data);
       } catch {
+        console.log(error)
         setError("Error cargando temporadas");
       }
     }
@@ -61,6 +64,7 @@ export default function TemporadaForm() {
   return (
     <div className="max-w-md mx-auto p-4 border rounded shadow">
       <h2 className="text-xl font-semibold mb-4">Seleccionar temporada</h2>
+      {error && <p className="text-red-600 mb-3">{error}</p>}
       <div className="mb-4">
         <label htmlFor="temporada" className="block mb-1 font-medium">Temporada</label>
         <select
@@ -70,10 +74,10 @@ export default function TemporadaForm() {
           className="w-full border px-3 py-2 rounded"
           required
         >
-          <option value="">-- Seleccione temporada --</option>
+          <option value="">-- Temporada --</option>
           {temporadas.map((temp) => (
             <option key={temp.id} value={temp.id}>
-              {temp.anio_inicio}{temp.anio_fin}
+              {`${temp.anio_inicio} - ${temp.anio_fin}`}
             </option>
           ))}
         </select>
@@ -81,7 +85,6 @@ export default function TemporadaForm() {
       <form onSubmit={handleSubmit}>
         <h2 className="text-xl font-semibold mb-4">Crear Temporada</h2>
 
-        {error && <p className="text-red-600 mb-3">{error}</p>}
         {success && <p className="text-green-600 mb-3">Temporada creada correctamente</p>}
 
         <div className="mb-4">
@@ -122,3 +125,4 @@ export default function TemporadaForm() {
       </form></div>
   );
 }
+
