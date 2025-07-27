@@ -1,47 +1,82 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "../config";
+import Toast from '../shared/Toast'
 
 interface Posicion {
   id: number;
   nombre: string;
 }
 
-interface Temporada {
-  id: number;
-  anio_inicio: number;
-  anio_fin: number;
+interface Props {
+  temporadaId: number | null;
 }
 
-export default function JugadorForm() {
+interface Jugador {
+  id: number;
+  dorsal: number;
+  nombre: string;
+  apellido1: string;
+  apellido2: string;
+  posicion: string
+}
+
+export default function JugadorForm({ temporadaId }: Props) {
   const [nombre, setNombre] = useState("");
   const [dorsal, setDorsal] = useState<number | "">("");
   const [posiciones, setPosiciones] = useState<Posicion[]>([]);
   const [posicionPrincipal, setPosicionPrincipal] = useState<number | "">("");
   const [posicionSecundaria, setPosicionSecundaria] = useState<number | "">("");
+  const [jugadoresTemporada, setJugadoresTemporada] = useState<Jugador[]>([]);
   const [temporadasSeleccionadas, setTemporadasSeleccionadas] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [jugadores, setJugadores] = useState<Jugador[]>([]);
+  const [selectedJugadorId, setSelectedJugadorId] = useState<number | "">("");
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchJugadores() {
+      if (!temporadaId) return;
+      try {
+        const res = await axios.get(API_URL + "/temporadas/" + temporadaId + "/jugadores");
+        setJugadoresTemporada(res.data.in);
+        setJugadores(res.data.out);
+      } catch (error) {
+        setError("Error al cargar jugadores de la temporada");
+        console.error("Error al cargar jugadores de la temporada", error);
+      }
+    }
+    async function fetchPosiciones() {
       try {
         const posRes = await axios.get(API_URL + '/posiciones');
         setPosiciones(posRes.data);
-        //setTemporadas(tempRes.data);
+
       } catch {
         setError("Error cargando posiciones o temporadas");
       }
     }
-    fetchData();
-  }, []);
+    fetchJugadores();
+    fetchPosiciones();
+  }, [temporadaId]);
 
-  const toggleTemporada = (id: number) => {
-    setTemporadasSeleccionadas((prev) =>
-      prev.includes(id) ? prev.filter((tid) => tid !== id) : [...prev, id]
-    );
-  };
+  const handleVincSubmit = async ()=>{
+    setSuccess(false);
+    setError(null);
+    try {
+      const res = await axios.post(API_URL+"/temporadas/"+temporadaId+"/jugadores", {
+        "jugador_id":selectedJugadorId,
+        dorsal
+      });
+      setToast({message: "Jugador vinculado con éxito", type:"success"})
+    } catch (error) {
+      console.log(error)
+      setToast({message: "Error al vincular al jugador: "+error, type:"error"})
+    }
+    setDorsal("");
+    setSelectedJugadorId("");
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,10 +85,6 @@ export default function JugadorForm() {
 
     if (!nombre.trim()) {
       setError("El nombre es obligatorio");
-      return;
-    }
-    if (dorsal === "" || dorsal <= 0) {
-      setError("El dorsal debe ser un número positivo");
       return;
     }
     if (!posicionPrincipal) {
@@ -70,7 +101,6 @@ export default function JugadorForm() {
       // 1. Crear jugador
       const res = await axios.post("/api/jugadores", {
         nombre,
-        dorsal,
         posicion_id: posicionPrincipal,
         posicion_secundaria_id: posicionSecundaria || null,
       });
@@ -88,7 +118,6 @@ export default function JugadorForm() {
 
       setSuccess(true);
       setNombre("");
-      setDorsal("");
       setPosicionPrincipal("");
       setPosicionSecundaria("");
       setTemporadasSeleccionadas([]);
@@ -100,9 +129,9 @@ export default function JugadorForm() {
   };
 
   return (
-
+    
     <div className="max-w-md mx-auto p-4 border rounded shadow">
-      <h2 className="text-xl font-semibold mb-4">Jugadores que participan en la temporada</h2>
+      <h2 className="text-xl font-semibold mb-4">{`Jugadores que participan en la temporada: ${temporadaId}`}</h2>
       <table className="w-full table-fixed">
         <thead>
           <tr className="bg-gray-200">
@@ -111,7 +140,49 @@ export default function JugadorForm() {
             <th className="border px-2 py-2">Posición</th>
           </tr>
         </thead>
+        <tbody>
+          {jugadoresTemporada.map((jugador) => (
+            <tr key={jugador.id} className="border-t">
+              <td className="border px-2 py-1">{jugador.dorsal}</td>
+              <td className="border px-2 py-1">{`${jugador.nombre} ${jugador.apellido1}`}</td>
+              <td className="border px-2 py-1">{jugador.posicion}</td>
+            </tr>
+          ))}
+        </tbody>
       </table>
+      <div className="max-w-md mx-auto p-4 border rounded shadow">
+        <h2 className="text-xl font-semibold mb-4">Vincular un jugador existente</h2>
+        <div className="p-4">
+        <select
+        id="jugador"
+        value={selectedJugadorId ?? ""}
+        onChange={(e)=>setSelectedJugadorId(Number(e.target.value))}
+        className="w-full border px-3 py-2 rounded"
+        >
+          <option value="">--Jugador--</option>
+          {jugadores.map((jug)=>(
+            <option key={jug.id} value={jug.id}>{`${jug.nombre} ${jug.apellido1} (${jug.posicion})`}</option>
+          ))}
+        </select>
+        <div className="mb-4">
+          <label className="block mb-1 font-medium">Dorsal</label>
+          <input
+            id="dorsal"
+            type="text"
+            value={dorsal}
+            onChange={(e) => setDorsal(Number(e.target.value))}
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleVincSubmit}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+        >
+         Vincular
+        </button>
+        </div>
+      </div>
       <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 border rounded shadow">
         <h2 className="text-xl font-semibold mb-4">Crear Jugador</h2>
 

@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, type Key } from "react";
 import axios from "axios";
-import {API_URL} from '../config'
+import { API_URL } from '../config'
 
 interface Temporada {
   id: number;
@@ -8,21 +8,29 @@ interface Temporada {
   anio_fin: number;
 }
 
-export default function TemporadaForm() {
+interface Props {
+  temporadaId: number | null;
+  setTemporadaId: (id: number) => void;
+}
+
+export default function TemporadaForm({ temporadaId, setTemporadaId }: Props) {
+  const [temporadas, setTemporadas] = React.useState<any[]>([]);
   const [startYear, setStartYear] = useState("");
   const [endYear, setEndYear] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [temporadas, setTemporadas] = useState<Temporada[]>([]);
-  const [temporadaId, setTemporadaId] = useState<number | "">("");
+
 
   useEffect(() => {
     async function fetchTemporadas() {
       try {
-        console.log(API_URL+"/temporadas")
-        const res = await axios.get(API_URL+"/temporadas");
+        console.log(API_URL + "/temporadas")
+        const res = await axios.get(API_URL + "/temporadas");
         setTemporadas(res.data);
+        if (res.data.length > 0 && temporadaId === null) {
+        setTemporadaId(res.data[0].id); // ✅ Selecciona la primera por defecto
+      }
       } catch {
         console.log(error)
         setError("Error cargando temporadas");
@@ -50,12 +58,12 @@ export default function TemporadaForm() {
 
     setLoading(true);
     try {
-      await axios.post("/api/temporadas", { nombre: "Hola", anio_inicio: start, anio_fin: end });
+      await axios.post(API_URL+"/temporadas", { nombre: "Hola", anio_inicio: start, anio_fin: end });
       setSuccess(true);
       setStartYear("");
       setEndYear("");
     } catch (err) {
-      setError("Error al crear la temporada");
+      setError("Error al crear la temporada: "+err);
     } finally {
       setLoading(false);
     }
@@ -69,7 +77,7 @@ export default function TemporadaForm() {
         <label htmlFor="temporada" className="block mb-1 font-medium">Temporada</label>
         <select
           id="temporada"
-          value={temporadaId}
+          value={temporadaId ?? ""}
           onChange={(e) => setTemporadaId(Number(e.target.value))}
           className="w-full border px-3 py-2 rounded"
           required
@@ -125,4 +133,3 @@ export default function TemporadaForm() {
       </form></div>
   );
 }
-
