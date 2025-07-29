@@ -1,5 +1,5 @@
 import React, { useState, useEffect, type Key } from "react";
-import axios from "axios";
+import axios from '../api/axios'
 import { API_URL } from '../config'
 
 interface Temporada {
@@ -26,14 +26,14 @@ export default function TemporadaForm({ temporadaId, setTemporadaId }: Props) {
     async function fetchTemporadas() {
       try {
         console.log(API_URL + "/temporadas")
-        const res = await axios.get(API_URL + "/temporadas");
+        const res = await axios.get("/temporadas");
         setTemporadas(res.data);
         if (res.data.length > 0 && temporadaId === null) {
         setTemporadaId(res.data[0].id); // ✅ Selecciona la primera por defecto
       }
-      } catch {
+      } catch (error) {
         console.log(error)
-        setError("Error cargando temporadas");
+        setError("Error cargando temporadas: "+error);
       }
     }
     fetchTemporadas();
