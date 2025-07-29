@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { API_URL } from "../config";
-import Toast from '../shared/Toast'
+import { useToast } from "../context/ToastContext";
 
 interface Posicion {
   id: number;
@@ -23,18 +23,16 @@ interface Jugador {
 
 export default function JugadorForm({ temporadaId }: Props) {
   const [nombre, setNombre] = useState("");
+  const [apellidos, setApellidos] = useState("");
   const [dorsal, setDorsal] = useState<number | "">("");
   const [posiciones, setPosiciones] = useState<Posicion[]>([]);
   const [posicionPrincipal, setPosicionPrincipal] = useState<number | "">("");
   const [posicionSecundaria, setPosicionSecundaria] = useState<number | "">("");
   const [jugadoresTemporada, setJugadoresTemporada] = useState<Jugador[]>([]);
-  const [temporadasSeleccionadas, setTemporadasSeleccionadas] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [jugadores, setJugadores] = useState<Jugador[]>([]);
   const [selectedJugadorId, setSelectedJugadorId] = useState<number | "">("");
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const {showToast} = useToast();
 
   useEffect(() => {
     async function fetchJugadores() {
@@ -44,7 +42,7 @@ export default function JugadorForm({ temporadaId }: Props) {
         setJugadoresTemporada(res.data.in);
         setJugadores(res.data.out);
       } catch (error) {
-        setError("Error al cargar jugadores de la temporada");
+        showToast("Error al cargar jugadores de la temporada"+ error, "error");
         console.error("Error al cargar jugadores de la temporada", error);
       }
     }
@@ -53,8 +51,8 @@ export default function JugadorForm({ temporadaId }: Props) {
         const posRes = await axios.get(API_URL + '/posiciones');
         setPosiciones(posRes.data);
 
-      } catch {
-        setError("Error cargando posiciones o temporadas");
+      } catch (err) {
+        showToast("Error cargando posiciones o temporadas"+err,"error");
       }
     }
     fetchJugadores();
@@ -62,17 +60,15 @@ export default function JugadorForm({ temporadaId }: Props) {
   }, [temporadaId]);
 
   const handleVincSubmit = async ()=>{
-    setSuccess(false);
-    setError(null);
     try {
-      const res = await axios.post(API_URL+"/temporadas/"+temporadaId+"/jugadores", {
+      await axios.post(API_URL+"/temporadas/"+temporadaId+"/jugadores", {
         "jugador_id":selectedJugadorId,
         dorsal
       });
-      setToast({message: "Jugador vinculado con éxito", type:"success"})
+      showToast("Jugador vinculado con éxito","success");
     } catch (error) {
-      console.log(error)
-      setToast({message: "Error al vincular al jugador: "+error, type:"error"})
+      console.log(error);
+      showToast("Error al vincular al jugador: "+error, "error");
     }
     setDorsal("");
     setSelectedJugadorId("");
@@ -80,49 +76,38 @@ export default function JugadorForm({ temporadaId }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(false);
 
     if (!nombre.trim()) {
-      setError("El nombre es obligatorio");
+      showToast("El nombre es obligatorio", "error");
+      return;
+    }
+    if (!apellidos.trim()) {
+      showToast("El apellido es obligatorio", "error");
       return;
     }
     if (!posicionPrincipal) {
-      setError("Debe seleccionar una posición principal");
-      return;
-    }
-    if (temporadasSeleccionadas.length === 0) {
-      setError("Debe seleccionar al menos una temporada");
+      showToast("Debe seleccionar una posición principal","error");
       return;
     }
 
     setLoading(true);
     try {
       // 1. Crear jugador
-      const res = await axios.post("/api/jugadores", {
+      await axios.post("/jugadores", {
         nombre,
+        apellido1: apellidos,
         posicion_id: posicionPrincipal,
-        posicion_secundaria_id: posicionSecundaria || null,
+        posicion2_id: posicionSecundaria || null,
       });
 
-      const jugadorId = res.data.id;
-
-      // 2. Asociar jugador a cada temporada
-      await Promise.all(
-        temporadasSeleccionadas.map((temporadaId) =>
-          axios.post(`/api/temporadas/${temporadaId}/jugadores`, {
-            jugador_id: jugadorId,
-          })
-        )
-      );
-
-      setSuccess(true);
+      showToast("Jugador creado con éxito", "success");
       setNombre("");
+      setApellidos("");
       setPosicionPrincipal("");
       setPosicionSecundaria("");
-      setTemporadasSeleccionadas([]);
-    } catch {
-      setError("Error al crear jugador");
+
+    } catch (err){
+      showToast("Error al crear jugador"+err, "error");
     } finally {
       setLoading(false);
     }
@@ -185,11 +170,7 @@ export default function JugadorForm({ temporadaId }: Props) {
       </div>
       <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 border rounded shadow">
         <h2 className="text-xl font-semibold mb-4">Crear Jugador</h2>
-
-        {error && <p className="text-red-600 mb-3">{error}</p>}
-        {success && <p className="text-green-600 mb-3">Jugador creado correctamente</p>}
-
-        <div className="mb-4">
+         <div className="mb-4">
           <label className="block mb-1 font-medium" htmlFor="nombre">Nombre</label>
           <input
             id="nombre"
@@ -202,14 +183,13 @@ export default function JugadorForm({ temporadaId }: Props) {
         </div>
 
         <div className="mb-4">
-          <label className="block mb-1 font-medium" htmlFor="dorsal">Dorsal</label>
+          <label className="block mb-1 font-medium" htmlFor="apellidos">Apellidos</label>
           <input
-            id="dorsal"
-            type="number"
-            value={dorsal}
-            onChange={(e) => setDorsal(e.target.value === "" ? "" : Number(e.target.value))}
+            id="apellidos"
+            type="text"
+            value={apellidos}
+            onChange={(e) => setApellidos(e.target.value === "" ? "" : e.target.value)}
             className="w-full border px-3 py-2 rounded"
-            min={1}
             required
           />
         </div>

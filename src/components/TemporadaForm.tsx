@@ -1,12 +1,8 @@
-import React, { useState, useEffect, type Key } from "react";
+import React, { useState, useEffect } from "react";
 import axios from '../api/axios'
 import { API_URL } from '../config'
+import { useToast } from "../context/ToastContext";
 
-interface Temporada {
-  id: number;
-  anio_inicio: number;
-  anio_fin: number;
-}
 
 interface Props {
   temporadaId: number | null;
@@ -20,7 +16,7 @@ export default function TemporadaForm({ temporadaId, setTemporadaId }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
+  const {showToast} = useToast();
 
   useEffect(() => {
     async function fetchTemporadas() {
@@ -38,6 +34,7 @@ export default function TemporadaForm({ temporadaId, setTemporadaId }: Props) {
     }
     fetchTemporadas();
   }, [temporadaId]);
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,11 +56,12 @@ export default function TemporadaForm({ temporadaId, setTemporadaId }: Props) {
     setLoading(true);
     try {
       await axios.post(API_URL+"/temporadas", { nombre: "Hola", anio_inicio: start, anio_fin: end });
-      setSuccess(true);
+      showToast('Temporada creada correctamente', 'success');
       setStartYear("");
       setEndYear("");
     } catch (err) {
-      setError("Error al crear la temporada: "+err);
+      showToast('Error al crear la temporada: '+err,'error');
+      //setError("Error al crear la temporada: "+err);
     } finally {
       setLoading(false);
     }
