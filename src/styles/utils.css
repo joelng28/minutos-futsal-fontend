@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.heading-h2 {
+  @apply text-xl font-semibold mb-4;
+}
+
+.heading-h3 {
+  @apply text-lg font-semibold mb-4;
+}
+
+.select-default {
+    @apply w-full border px-3 py-2 rounded;
+}
+
+.input-default{
+    @apply w-full border px-3 py-2 rounded;
+}
+
+.button-default {
+    @apply px-4 py-2 rounded;
+}
+
+.label-text-default {
+    @apply font-normal block mb-1 text-base;
+}
+
+.module-default{
+    @apply max-w-md mx-auto p-4 border rounded shadow;
+}
+
+.table-default {
+  @apply w-full border px-3 py-2 rounded;
+}
+
+.table-head-default{
+    @apply bg-gray-200;
+}
+
+.table-head-el-default{
+    @apply border px-2 py-2;
+}
+
+.table-row-default{
+    @apply border-t;
+}
+
+.table-row-el-default{
+    @apply border px-2 py-1 text-center;
+}

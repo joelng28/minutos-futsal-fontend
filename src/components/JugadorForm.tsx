@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "../api/axios";
 import { API_URL } from "../config";
 import { useToast } from "../context/ToastContext";
+import type { Jugador } from "../models/modelJugador";
 
 interface Posicion {
   id: number;
@@ -12,14 +13,6 @@ interface Props {
   temporadaId: number | null;
 }
 
-interface Jugador {
-  id: number;
-  dorsal: number;
-  nombre: string;
-  apellido1: string;
-  apellido2: string;
-  posicion: string
-}
 
 export default function JugadorForm({ temporadaId }: Props) {
   const [nombre, setNombre] = useState("");
@@ -117,20 +110,20 @@ export default function JugadorForm({ temporadaId }: Props) {
     
     <div className="max-w-md mx-auto p-4 border rounded shadow">
       <h2 className="text-xl font-semibold mb-4">{`Jugadores que participan en la temporada: ${temporadaId}`}</h2>
-      <table className="w-full table-fixed">
+      <table className="table-default">
         <thead>
-          <tr className="bg-gray-200">
-            <th className="border px-2 py-2">Dorsal</th>
-            <th className="border px-2 py-2">Nombre</th>
-            <th className="border px-2 py-2">Posición</th>
+          <tr className="table-head-default">
+            <th className="table-head-el-default">Dorsal</th>
+            <th className="table-head-el-default">Nombre</th>
+            <th className="table-head-el-default">Posición</th>
           </tr>
         </thead>
         <tbody>
           {jugadoresTemporada.map((jugador) => (
-            <tr key={jugador.id} className="border-t">
-              <td className="border px-2 py-1">{jugador.dorsal}</td>
-              <td className="border px-2 py-1">{`${jugador.nombre} ${jugador.apellido1}`}</td>
-              <td className="border px-2 py-1">{jugador.posicion}</td>
+            <tr key={jugador.id} className="table-row-default">
+              <td className="table-row-el-default">{jugador.dorsal}</td>
+              <td className="table-row-el-default">{`${jugador.nombre} ${jugador.apellido1}`}</td>
+              <td className="table-row-el-default">{jugador.posicion}</td>
             </tr>
           ))}
         </tbody>

@@ -1,7 +1,8 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 
 import TemporadaForm from '../components/TemporadaForm';
 import JugadorForm from '../components/JugadorForm';
+import PartidoForm from '../components/PartidoForm';
 
 export default function Home() {
   const [temporadaId, setTemporadaId] = useState<number | null>(null);
@@ -12,8 +13,9 @@ export default function Home() {
           <span className='text-xl font-bold text-white'>Menú principal</span>
         </div>
         <div className="max-w-full flex gap-4 items-start">
-          <div className='w-full w-1/2'><TemporadaForm temporadaId={temporadaId} setTemporadaId={setTemporadaId} /></div>
-          <div className='w-full w-1/2'><JugadorForm temporadaId={temporadaId}/></div>
+          <div className='w-full w-1/3'><TemporadaForm temporadaId={temporadaId} setTemporadaId={setTemporadaId} /></div>
+          <div className='w-full w-1/3'><JugadorForm temporadaId={temporadaId}/></div>
+          <div className='w-full w-1/3'><PartidoForm temporadaId={temporadaId}/></div>
           
         </div>
       </div>
